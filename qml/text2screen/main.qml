@@ -6,8 +6,8 @@ Rectangle {
     height: 600
 
     property int charsPerSecond: 18
+    onCharsPerSecondChanged: clockText.updateClockText()
     property bool moveFast: false
-
     property real charWidth: 0
 
     Rectangle {
@@ -15,7 +15,7 @@ Rectangle {
         clip: true
         anchors.bottom: mainRectangle.bottom
         anchors.right: mainRectangle.right
-        width: 100
+        width: 120
         height: 40
 
         Text {
@@ -28,7 +28,7 @@ Rectangle {
             property int minutes: 0
             property int seconds: 0
             property int timerSeconds: 0
-            text: "00:00"
+            text: charsPerSecond + " - 00:00"
 
 
 
@@ -40,7 +40,11 @@ Rectangle {
                     minutes++;
                 }
 
-                clockText.text = checkTime(minutes) + ":" + checkTime(seconds);
+                updateClockText();
+            }
+
+            function updateClockText() {
+                clockText.text = mainRectangle.charsPerSecond + " - " + checkTime(minutes) + ":" + checkTime(seconds);
             }
 
             function checkTime(i) {
@@ -116,8 +120,17 @@ Rectangle {
             if ( event.key == Qt.Key_Plus) {
                 textItem.font.pixelSize *= 1.2;
             }
+
             if ( event.key == Qt.Key_Minus) {
                 textItem.font.pixelSize *= 1/1.2;
+            }
+
+            if (event.key == Qt.Key_Right) {
+                charsPerSecond += 1;
+            }
+
+            if (event.key == Qt.Key_Left) {
+                charsPerSecond -= 1;
             }
 
             if ( event.key == Qt.Key_0) {
