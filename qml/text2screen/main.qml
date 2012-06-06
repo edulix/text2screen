@@ -8,6 +8,57 @@ Rectangle {
     property int charsPerSecond: 10
     property bool moveFast: false
 
+    Rectangle {
+        id: clockRect
+        clip: true
+        anchors.bottom: mainRectangle.bottom
+        anchors.right: mainRectangle.right
+        width: 100
+        height: 40
+
+        Text {
+            id: clockText
+            anchors.centerIn: parent
+            font.pixelSize: 20
+
+            property int minutes: 0
+            property int seconds: 0
+            property int timerSeconds: 0
+            text: "00:00"
+
+            function timeChanged() {
+                timerSeconds = timerSeconds + 1;
+                seconds = timerSeconds % 60;
+
+                if (timerSeconds % 60 == 0) {
+                    minutes++;
+                }
+
+                clockText.text = checkTime(minutes) + ":" + checkTime(seconds);
+            }
+
+            function checkTime(i) {
+                return (i<10) ? "0"+i : i;
+            }
+        }
+
+        Timer {
+            id: checkingTimer
+            interval: 1000
+            repeat: true
+            running: countTimer.running
+            onTriggered: clockText.timeChanged()
+        }
+
+
+
+        Timer {
+            id: countTimer
+            running: false
+            interval: 1000000000
+        }
+    }
+
     Flickable {
         id: flickArea
         anchors.fill: parent
@@ -50,6 +101,7 @@ Rectangle {
 
             if ( event.key == Qt.Key_0) {
                 textItem.goTonitialPosition();
+                countTimer.stop();
             }
 
             console.debug("event.key == Qt.Key_Space " + (event.key == Qt.Key_Space));
@@ -57,8 +109,10 @@ Rectangle {
             if ( event.key == Qt.Key_Space) {
                 if (scrollAnimation.running) {
                     flickArea.contentY = flickArea.contentY;
+                    countTimer.pause();
                 } else {
                     flickArea.contentY = textItem.height - flickArea.height;
+                    countTimer.start();
                 }
             }
         }
