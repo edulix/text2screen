@@ -5,8 +5,10 @@ Rectangle {
     width: 800
     height: 600
 
-    property int charsPerSecond: 10
+    property int charsPerSecond: 18
     property bool moveFast: false
+
+    property real charWidth: 0
 
     Rectangle {
         id: clockRect
@@ -19,12 +21,16 @@ Rectangle {
         Text {
             id: clockText
             anchors.centerIn: parent
-            font.pixelSize: 20
+            font {
+                pixelSize: 20
+            }
 
             property int minutes: 0
             property int seconds: 0
             property int timerSeconds: 0
             text: "00:00"
+
+
 
             function timeChanged() {
                 timerSeconds = timerSeconds + 1;
@@ -75,7 +81,22 @@ Rectangle {
 
             text: helper.getSpeechText()
             anchors.centerIn: parent
-            font.pixelSize: 60
+            font {
+                pixelSize: 60
+            }
+
+            onFontChanged: calcPixelWidth()
+            onTextChanged: calcPixelWidth()
+
+            function calcPixelWidth()
+            {
+                var sampleText = "En un lugar de la Mancha, de cuyo nombre no quiero acordarme";
+                var textElement = Qt.createQmlObject('import Qt 4.7; Text { font.pixelSize:' + font.pixelSize + '; text: "' + sampleText + '"}',
+                    textItem, "calcTextWidth");
+                mainRectangle.charWidth = textElement.width / sampleText.length;
+                textElement.destroy();
+
+            }
 
             Component.onCompleted: goTonitialPosition()
 
@@ -122,8 +143,8 @@ Rectangle {
                 id: scrollAnimation
                 easing.type: Easing.Linear
                 maximumEasingTime: 1
-                velocity: mainRectangle.moveFast ? 10000 : (mainRectangle.charsPerSecond * textItem.font.pixelSize) / (mainRectangle.width / textItem.font.pixelSize)
-                onVelocityChanged: console.debug("vel = " + scrollAnimation.velocity)
+                velocity: mainRectangle.moveFast ? 10000 : (mainRectangle.charsPerSecond * textItem.font.pixelSize) / (mainRectangle.width / mainRectangle.charWidth)
+                onVelocityChanged: console.debug("vel = " + scrollAnimation.velocity + " (mainRectangle.width / mainRectangle.charWidth) = " + (mainRectangle.width / mainRectangle.charWidth))
                 onRunningChanged: {
                     if (!running) {
                         mainRectangle.moveFast = false;
