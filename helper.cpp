@@ -9,6 +9,7 @@ Helper::Helper(int argc, char *argv[], QmlApplicationViewer &viewer)
     : QObject(0)
 {
     mApplicationViewer = &viewer;
+    toggleFullScreen();
 
     QFile file;
 
@@ -43,4 +44,14 @@ Helper::Helper(const Helper &copy)
 QString Helper::getSpeechText()
 {
     return mSpeechText;
+}
+
+void Helper::toggleFullScreen()
+{
+    qDebug() << "Helper::toogleFullScreen()\n";
+    if (!mApplicationViewer->isFullScreen()) {
+        mApplicationViewer->showFullScreen();
+    } else {
+        mApplicationViewer->showNormal();
+    }
 }

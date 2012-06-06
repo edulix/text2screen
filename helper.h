@@ -20,6 +20,8 @@ public Q_SLOTS:
      */
     Q_INVOKABLE QString getSpeechText();
 
+    Q_INVOKABLE void toggleFullScreen();
+
 protected:
     QString mSpeechText;
     QmlApplicationViewer *mApplicationViewer;
