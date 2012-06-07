@@ -6,25 +6,35 @@
 #include <QObject>
 #include <QMetaType>
 
+class MainWindow;
+
 class Helper : public QObject
 {
     Q_OBJECT
+    Q_PROPERTY(QString speechText READ speechText() WRITE setSpeechText NOTIFY speechTextChanged)
 public:
-    explicit Helper(int argc, char *argv[], QmlApplicationViewer &viewer);
+    explicit Helper(MainWindow *mainWindow);
     explicit Helper(const Helper &copy);
-    explicit Helper() : QObject(0), mApplicationViewer(0) {}
+    explicit Helper() : QObject(0), mMainWindow(0) {}
 
 public Q_SLOTS:
     /**
      * @returns the text of the speech given to the app as an argument
      */
-    Q_INVOKABLE QString getSpeechText();
+    Q_INVOKABLE QString speechText() const;
+
+    Q_INVOKABLE void setSpeechText(const QString &speechText);
 
     Q_INVOKABLE void toggleFullScreen();
 
+    Q_INVOKABLE void openSpeechDialog(const QString &tryThisFirst = "");
+
+Q_SIGNALS:
+    void speechTextChanged();
+
 protected:
     QString mSpeechText;
-    QmlApplicationViewer *mApplicationViewer;
+    MainWindow *mMainWindow;
 };
 
 Q_DECLARE_METATYPE(Helper*)

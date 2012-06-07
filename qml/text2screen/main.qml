@@ -11,6 +11,24 @@ Rectangle {
     property bool continueScrolling: false
     property real charWidth: 0
 
+    property alias text: textItem.text
+    property alias fontSize: textItem.font.pixelSize
+    property alias contentY: flickArea.contentY
+
+    function startScrolling() {
+        if (!scrollAnimation.running) {
+            flickArea.contentY = flickArea.contentY;
+            countTimer.running = false;
+        }
+    }
+
+    function pauseScrolling() {
+        if (scrollAnimation.running) {
+            flickArea.contentY = flickArea.contentY;
+            countTimer.running = false;
+        }
+    }
+
     Rectangle {
         id: clockRect
         clip: true
@@ -57,7 +75,7 @@ Rectangle {
             id: checkingTimer
             interval: 1000
             repeat: true
-            running: countTimer.running
+            running: countTimer.running && !mainRectangle.continueScrolling
             onTriggered: clockText.timeChanged()
         }
 
@@ -84,14 +102,12 @@ Rectangle {
             wrapMode: Text.Wrap
             width: mainRectangle.width
 
-            text: helper.getSpeechText()
+            text: helper.speechText
             anchors.centerIn: parent
-            font {
-                pixelSize: 60
-            }
+            font.pixelSize: 60
 
             onFontChanged: calcFontWidth()
-            onTextChanged: calcFontWidth()
+            onTextChanged: { calcFontWidth(); goTonitialPosition(); }
 
             function calcFontWidth()
             {
@@ -102,8 +118,6 @@ Rectangle {
                 textElement.destroy();
 
             }
-
-            Component.onCompleted: goTonitialPosition()
 
             function goTonitialPosition() {
                 mainRectangle.moveFast = true;
@@ -135,25 +149,25 @@ Rectangle {
 
             if (event.key == Qt.Key_Up) {
                 mainRectangle.moveFast = true;
-                mainRectangle.continueScrolling = true;
+                mainRectangle.continueScrolling = scrollAnimation.running && !mainRectangle.continueScrolling;
                 flickArea.contentY = flickArea.contentY - textItem.font.pixelSize;
             }
 
             if (event.key == Qt.Key_Down) {
                 mainRectangle.moveFast = true;
-                mainRectangle.continueScrolling = true;
+                mainRectangle.continueScrolling = scrollAnimation.running && !mainRectangle.continueScrolling;
                 flickArea.contentY = flickArea.contentY + textItem.font.pixelSize;
             }
 
             if (event.key == Qt.Key_PageUp) {
                 mainRectangle.moveFast = true;
-                mainRectangle.continueScrolling = true;
+                mainRectangle.continueScrolling = scrollAnimation.running && !mainRectangle.continueScrolling;
                 flickArea.contentY = flickArea.contentY - (flickArea.height  - textItem.font.pixelSize);
             }
 
             if (event.key == Qt.Key_PageDown) {
                 mainRectangle.moveFast = true;
-                mainRectangle.continueScrolling = true;
+                mainRectangle.continueScrolling = scrollAnimation.running && !mainRectangle.continueScrolling;
                 flickArea.contentY = flickArea.contentY + (flickArea.height  - textItem.font.pixelSize);
             }
 
