@@ -128,19 +128,21 @@ Rectangle {
             }
 
             if (event.key == Qt.Key_Left) {
-                charsPerSecond -= 1;
+                if (charsPerSecond > 1) {
+                    charsPerSecond -= 1;
+                }
             }
 
             if (event.key == Qt.Key_Up) {
                 mainRectangle.moveFast = true;
                 mainRectangle.continueScrolling = true;
-                flickArea.contentY = flickArea.contentY - 20;
+                flickArea.contentY = flickArea.contentY - textItem.font.pixelSize;
             }
 
             if (event.key == Qt.Key_Down) {
                 mainRectangle.moveFast = true;
                 mainRectangle.continueScrolling = true;
-                flickArea.contentY = flickArea.contentY + 20;
+                flickArea.contentY = flickArea.contentY + textItem.font.pixelSize;
             }
 
             if ( event.key == Qt.Key_0) {
@@ -167,7 +169,7 @@ Rectangle {
                 easing.type: Easing.Linear
                 maximumEasingTime: 1
                 velocity: mainRectangle.moveFast ? 100000 : (mainRectangle.charsPerSecond * textItem.font.pixelSize) / (mainRectangle.width / mainRectangle.charWidth)
-                onVelocityChanged: console.debug("vel = " + scrollAnimation.velocity + " (mainRectangle.width / mainRectangle.charWidth) = " + (mainRectangle.width / mainRectangle.charWidth))
+                onVelocityChanged: console.debug("vel = " + scrollAnimation.velocity)
                 onRunningChanged: {
                     if (!running) {
                         if (mainRectangle.moveFast && mainRectangle.continueScrolling) {
