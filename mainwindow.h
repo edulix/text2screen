@@ -3,11 +3,13 @@
 
 
 #include "qmlapplicationviewer.h"
+#include "sortfilterproxymodel.h"
 
 #include <QWidget>
 #include <QStackedLayout>
-#include <QComboBox>
 #include <QTextEdit>
+#include <QListView>
+#include <QLineEdit>
 
 class Helper;
 
@@ -27,10 +29,27 @@ public Q_SLOTS:
 
     void restoreSettings();
 
+    void toggleSpeechSelector();
+
+    void toggleSpeechWriter();
+
+protected Q_SLOTS:
+    void selectUp();
+
+    void selectDown();
+
+    void changeFilter(const QString &filterString);
+
+protected:
+    bool eventFilter(QObject *obj, QEvent *event);
+
 protected:
     QStackedLayout mLayout;
     QmlApplicationViewer mViewer;
-    QComboBox mSpeechSelector;
+    QLineEdit mSpeechSelector;
+    QListView mSpeechListView;
+    QWidget *mSpeechSelectorContainer;
+    SortFilterProxyModel *mFilterModel;
     QTextEdit mSpeechWriter;
     Helper *mHelper;
 };

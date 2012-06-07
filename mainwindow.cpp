@@ -6,17 +6,24 @@
 #include <QDeclarativeView>
 #include <qdeclarative.h>
 #include <QKeySequence>
+#include <QStringListModel>
 #include <QAction>
 #include <QSettings>
 #include <QApplication>
 #include <QFile>
 #include <QDebug>
+#include <QCompleter>
+#include <QBoxLayout>
+#include <QListView>
+#include <QModelIndex>
+#include <QKeyEvent>
 
 MainWindow::MainWindow(QWidget *parent)
     : QWidget(parent),
       mLayout(this),
       mViewer(this),
       mSpeechSelector(this),
+      mSpeechListView(this),
       mSpeechWriter(this),
       mHelper(new Helper(this))
 {
@@ -40,12 +47,55 @@ MainWindow::MainWindow(QWidget *parent)
     connect(action, SIGNAL(triggered()), mHelper, SLOT(openSpeechDialog()));
     addAction(action);
 
+    action = new QAction(this);
+    action->setShortcut(QKeySequence(Qt::Key_Escape));
+    connect(action, SIGNAL(triggered()), this, SLOT(toggleSpeechSelector()));
+    addAction(action);
+
     restoreSettings();
+
+
+    mSpeechSelectorContainer = new QWidget(this);
+    QBoxLayout *boxLayout = new QBoxLayout(QBoxLayout::TopToBottom, mSpeechSelectorContainer);
+    boxLayout->addWidget(&mSpeechSelector);
+    mSpeechSelector.installEventFilter(this);
+
+    QStringListModel *model = new QStringListModel(QStringList() << "hola" << "cara" << "cola");
+    mFilterModel = new SortFilterProxyModel(this);
+    mFilterModel->setSourceModel(model);
+
+    connect(&mSpeechSelector, SIGNAL(textChanged(QString)), this, SLOT(changeFilter(QString)));
+    mSpeechListView.setModel(mFilterModel);
+    mSpeechListView.setSelectionMode(QAbstractItemView::SingleSelection);
+    mSpeechListView.setFocusPolicy(Qt::NoFocus);
+    mSpeechListView.selectionModel()->select(mFilterModel->index(0, 0), QItemSelectionModel::SelectCurrent);
+    boxLayout->addWidget(&mSpeechListView);
+    mLayout.addWidget(mSpeechSelectorContainer);
+
+
+    mLayout.addWidget(&mSpeechWriter);
+
 }
 
 MainWindow::~MainWindow()
 {
     storeSettings();
+}
+
+bool MainWindow::eventFilter(QObject *obj, QEvent *event)
+{
+    if (event->type() == QEvent::KeyPress) {
+        QKeyEvent *keyEvent = static_cast<QKeyEvent *>(event);
+        if (keyEvent->key() == Qt::Key_Up) {
+            selectUp();
+            return true;
+        } else if (keyEvent->key() == Qt::Key_Down) {
+            selectDown();
+            return true;
+        }
+    }
+
+    return QWidget::eventFilter(obj, event);
 }
 
 void MainWindow::storeSettings()
@@ -124,4 +174,59 @@ void MainWindow::showWidget(const QString &name)
     if (name == "viewer") {
         mLayout.setCurrentWidget(&mViewer);
     }
+}
+
+void MainWindow::toggleSpeechSelector()
+{
+    if (mLayout.currentWidget() == mSpeechSelectorContainer) {
+        mLayout.setCurrentWidget(&mViewer);
+    } else {
+        mLayout.setCurrentWidget(mSpeechSelectorContainer);
+        mSpeechSelector.setFocus(Qt::MouseFocusReason);
+    }
+
+}
+
+void MainWindow::toggleSpeechWriter()
+{
+    if (mLayout.currentWidget() == &mSpeechWriter) {
+        mLayout.setCurrentWidget(&mViewer);
+    } else {
+        mLayout.setCurrentWidget(&mSpeechWriter);
+    }
+}
+
+void MainWindow::selectUp()
+{
+    QModelIndex currentIndex = mSpeechListView.selectionModel()->selectedIndexes().first();
+    QModelIndex upIndex = currentIndex.sibling(currentIndex.row() - 1, currentIndex.column());
+    if (!upIndex.isValid()) {
+        return;
+    }
+    mSpeechListView.selectionModel()->select(upIndex, QItemSelectionModel::SelectCurrent);
+}
+
+void MainWindow::selectDown()
+{
+    QModelIndex currentIndex = mSpeechListView.selectionModel()->selectedIndexes().first();
+    QModelIndex downIndex = currentIndex.sibling(currentIndex.row() + 1, currentIndex.column());
+    if (!downIndex.isValid()) {
+        return;
+    }
+    mSpeechListView.selectionModel()->select(downIndex, QItemSelectionModel::SelectCurrent);
+}
+
+void MainWindow::changeFilter(const QString &filterString)
+{
+    QModelIndex currentIndex = mSpeechListView.selectionModel()->selectedIndexes().first();
+    currentIndex = mFilterModel->mapToSource(currentIndex);
+
+    mFilterModel->setFilterString(filterString);
+
+    currentIndex = mFilterModel->mapFromSource(currentIndex);
+
+    if (!currentIndex.isValid()) {
+        currentIndex = mFilterModel->index(0, 0);
+    }
+    mSpeechListView.selectionModel()->select(currentIndex, QItemSelectionModel::SelectCurrent);
 }

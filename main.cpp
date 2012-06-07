@@ -13,5 +13,7 @@ Q_DECL_EXPORT int main(int argc, char *argv[])
     MainWindow mainWindow;
     mainWindow.show();
 
+    app->setStyleSheet("QListView, QLineEdit { font-size: 60px; }");
+
     return app->exec();
 }
