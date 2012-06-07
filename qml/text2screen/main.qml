@@ -90,10 +90,10 @@ Rectangle {
                 pixelSize: 60
             }
 
-            onFontChanged: calcPixelWidth()
-            onTextChanged: calcPixelWidth()
+            onFontChanged: calcFontWidth()
+            onTextChanged: calcFontWidth()
 
-            function calcPixelWidth()
+            function calcFontWidth()
             {
                 var sampleText = "En un lugar de la Mancha, de cuyo nombre no quiero acordarme";
                 var textElement = Qt.createQmlObject('import Qt 4.7; Text { font.pixelSize:' + font.pixelSize + '; text: "' + sampleText + '"}',
@@ -145,6 +145,18 @@ Rectangle {
                 flickArea.contentY = flickArea.contentY + textItem.font.pixelSize;
             }
 
+            if (event.key == Qt.Key_PageUp) {
+                mainRectangle.moveFast = true;
+                mainRectangle.continueScrolling = true;
+                flickArea.contentY = flickArea.contentY - (flickArea.height  - textItem.font.pixelSize);
+            }
+
+            if (event.key == Qt.Key_PageDown) {
+                mainRectangle.moveFast = true;
+                mainRectangle.continueScrolling = true;
+                flickArea.contentY = flickArea.contentY + (flickArea.height  - textItem.font.pixelSize);
+            }
+
             if ( event.key == Qt.Key_0) {
                 textItem.goTonitialPosition();
                 countTimer.stop();
@@ -155,10 +167,10 @@ Rectangle {
             if ( event.key == Qt.Key_Space) {
                 if (scrollAnimation.running) {
                     flickArea.contentY = flickArea.contentY;
-                    countTimer.pause();
+                    countTimer.running = false;
                 } else {
                     flickArea.contentY = textItem.height - flickArea.height;
-                    countTimer.start();
+                    countTimer.running = true;
                 }
             }
         }
