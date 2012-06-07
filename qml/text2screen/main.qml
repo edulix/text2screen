@@ -8,6 +8,7 @@ Rectangle {
     property int charsPerSecond: 18
     onCharsPerSecondChanged: clockText.updateClockText()
     property bool moveFast: false
+    property bool continueScrolling: false
     property real charWidth: 0
 
     Rectangle {
@@ -104,9 +105,6 @@ Rectangle {
 
             Component.onCompleted: goTonitialPosition()
 
-            onWidthChanged: goTonitialPosition();
-            onHeightChanged: goTonitialPosition();
-
             function goTonitialPosition() {
                 mainRectangle.moveFast = true;
                 flickArea.contentY = (-2/3)*flickArea.height;
@@ -133,6 +131,18 @@ Rectangle {
                 charsPerSecond -= 1;
             }
 
+            if (event.key == Qt.Key_Up) {
+                mainRectangle.moveFast = true;
+                mainRectangle.continueScrolling = true;
+                flickArea.contentY = flickArea.contentY - 20;
+            }
+
+            if (event.key == Qt.Key_Down) {
+                mainRectangle.moveFast = true;
+                mainRectangle.continueScrolling = true;
+                flickArea.contentY = flickArea.contentY + 20;
+            }
+
             if ( event.key == Qt.Key_0) {
                 textItem.goTonitialPosition();
                 countTimer.stop();
@@ -156,11 +166,17 @@ Rectangle {
                 id: scrollAnimation
                 easing.type: Easing.Linear
                 maximumEasingTime: 1
-                velocity: mainRectangle.moveFast ? 10000 : (mainRectangle.charsPerSecond * textItem.font.pixelSize) / (mainRectangle.width / mainRectangle.charWidth)
+                velocity: mainRectangle.moveFast ? 100000 : (mainRectangle.charsPerSecond * textItem.font.pixelSize) / (mainRectangle.width / mainRectangle.charWidth)
                 onVelocityChanged: console.debug("vel = " + scrollAnimation.velocity + " (mainRectangle.width / mainRectangle.charWidth) = " + (mainRectangle.width / mainRectangle.charWidth))
                 onRunningChanged: {
                     if (!running) {
-                        mainRectangle.moveFast = false;
+                        if (mainRectangle.moveFast && mainRectangle.continueScrolling) {
+                            mainRectangle.moveFast = false;
+                            mainRectangle.continueScrolling = false;
+                            flickArea.contentY = textItem.height - flickArea.height;
+                        } else {
+                            mainRectangle.moveFast = false;
+                        }
                     }
                 }
             }
