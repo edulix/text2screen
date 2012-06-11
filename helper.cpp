@@ -8,6 +8,8 @@
 #include <QtGui/QMessageBox>
 #include <QtGui/QApplication>
 #include <QtCore/QSettings>
+#include <QtCore/QRegExp>
+#include <QtCore/QTextStream>
 
 Helper::Helper(MainWindow *mainWindow)
     : QObject(0)
@@ -17,29 +19,89 @@ Helper::Helper(MainWindow *mainWindow)
 }
 
 Helper::Helper(const Helper &copy)
-    : mMainWindow(0)
+    : QObject(copy.parent()), mMainWindow(0)
 {
-    mSpeechText = copy.mSpeechText;
+    mSpeechTitle = copy.mSpeechTitle;
+    mSpeechItems = copy.mSpeechItems;
+    mSpeechTitles = copy.mSpeechTitles;
     mMainWindow = copy.mMainWindow;
 }
 
 QString Helper::speechText() const
 {
-    return mSpeechText;
+    if (mSpeechTitle.isEmpty()) {
+        return QString();
+    }
+
+    return mSpeechItems[mSpeechTitle];
 }
 
 void Helper::setSpeechText(const QString &speechText)
 {
-    mSpeechText = speechText;
+    if(mSpeechTitle.isEmpty()) {
+        qDebug() << "!!! setSpeechText called and mSpeechTitle.isEmpty()";
+        return;
+    }
+
+    if (speechText == mSpeechItems[mSpeechTitle]) {
+        return;
+    }
+
+    mSpeechItems[mSpeechTitle] = speechText;
 
     QSettings settings;
     settings.beginGroup("Main");
-    settings.setValue("lastUsedSpeechText", mSpeechText);
+    settings.setValue("lastUsedSpeechText", mSpeechItems[mSpeechTitle]);
     settings.endGroup();
     settings.sync();
 
-    qDebug() << "\n\n\nemit speechTextChanged();" << mSpeechText.left(10);
     emit speechTextChanged();
+}
+
+QString Helper::speechTitle() const
+{
+    return mSpeechTitle;
+}
+
+void Helper::setSpeechTitle(const QString &speechTitle)
+{
+    if (!mSpeechItems.contains(speechTitle)) {
+        qDebug() << "!!! setSpeechTitle called and !mSpeechItems.contains(speechTitle)";
+        return;
+    }
+
+    QString oldSpeechText = speechText();
+
+    mSpeechTitle = speechTitle;
+
+    QSettings settings;
+    settings.beginGroup("Main");
+    settings.setValue("lastUsedSpeechTitle", mSpeechTitle);
+    settings.setValue("lastUsedSpeechText", mSpeechItems[mSpeechTitle]);
+    settings.endGroup();
+    settings.sync();
+
+    emit speechTitleChanged();
+
+    if (oldSpeechText != mSpeechItems[mSpeechTitle]) {
+        emit speechTextChanged();
+    }
+}
+
+void Helper::changeSpeechTitle(const QString &speechTitle)
+{
+    QString oldTitle = mSpeechTitle;
+    mSpeechItems[speechTitle] = mSpeechItems[mSpeechTitle];
+
+    mSpeechItems.remove(oldTitle);
+
+    int pos = mSpeechTitles.indexOf(oldTitle);
+    mSpeechTitles.replace(pos, speechTitle);
+
+    mSpeechTitle = speechTitle;
+
+    emit speechTitleChanged();
+    emit speechItemsChanged();
 }
 
 void Helper::toggleFullScreen()
@@ -57,8 +119,8 @@ void Helper::openSpeechDialog(const QString &tryThisFirst)
     QFile file(lastUsedSpeechPath);
 
     if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
-        lastUsedSpeechPath = QFileDialog::getOpenFileName(mMainWindow, tr("Open Speech"),
-            lastUsedSpeechPath);
+        lastUsedSpeechPath = QFileDialog::getOpenFileName(mMainWindow,
+            tr("Open Speech"), lastUsedSpeechPath);
         file.setFileName(lastUsedSpeechPath);
 
         while(!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
@@ -72,11 +134,118 @@ void Helper::openSpeechDialog(const QString &tryThisFirst)
                 return;
             }
 
-            lastUsedSpeechPath = QFileDialog::getOpenFileName(mMainWindow, tr("Open Speech"),
-                "");
+            lastUsedSpeechPath = QFileDialog::getOpenFileName(mMainWindow,
+                tr("Open Speech"), "");
             file.setFileName(lastUsedSpeechPath);
         }
     }
 
-    setSpeechText(QString::fromUtf8(file.readAll()));
+    QSettings settings;
+    settings.beginGroup("Main");
+    settings.setValue("lastUsedSpeechPath", lastUsedSpeechPath);
+    settings.endGroup();
+    settings.sync();
+
+    // erase all!
+    mSpeechItems = QHash<QString, QString>();
+    mSpeechTitles = QStringList();
+    mSpeechTitle = QString();
+
+    QString key, value;
+    while (!file.atEnd()) {
+        QString line = QString::fromUtf8(file.readLine());
+        if (line.startsWith("=")) {
+            if (!value.isEmpty() && !key.isEmpty()) {
+                line = line.replace("=", "").trimmed();
+                mSpeechItems[key] = value;
+                mSpeechTitles.append(key);
+
+                if (mSpeechTitle.isEmpty()) {
+                    setSpeechTitle(key);
+                }
+            }
+
+            key = line.replace("=", "").trimmed();
+            value = QString();
+        } else {
+            value += line;
+        }
+    }
+
+    if (!value.isEmpty() && !key.isEmpty()) {
+        mSpeechItems[key] = value;
+        mSpeechTitles.append(key);
+
+        if (mSpeechTitle.isEmpty()) {
+            setSpeechTitle(key);
+        }
+    }
+
+    emit speechItemsChanged();
+}
+
+void Helper::deleteSpeechItem(const QString &speechTitle)
+{
+    if (!mSpeechItems.contains(speechTitle) || mSpeechTitles.count() == 1) {
+        return;
+    }
+
+    int titlesIndex = mSpeechTitles.indexOf(speechTitle);
+
+
+    mSpeechItems.remove(speechTitle);
+    mSpeechTitles.removeOne(speechTitle);
+
+    if (mSpeechTitle == speechTitle) {
+        int nextIndex;
+        if (titlesIndex == 0) {
+            nextIndex = titlesIndex;
+        } else {
+            nextIndex = titlesIndex - 1;
+        }
+
+        QString nextTitle = mSpeechTitles.at(nextIndex) ;
+
+        setSpeechTitle(nextTitle);
+    }
+    emit speechItemsChanged();
+}
+
+void Helper::save()
+{
+    qDebug() << "file saved!";
+    QSettings settings;
+    settings.beginGroup("Main");
+    QString lastUsedSpeechPath = settings.value("lastUsedSpeechPath", "").toString();
+    settings.endGroup();
+
+    QFile file(lastUsedSpeechPath);
+
+    while(!file.open(QIODevice::WriteOnly | QIODevice::Truncate | QIODevice::Text)) {
+        lastUsedSpeechPath = QFileDialog::getSaveFileName(mMainWindow,
+            tr("Save Speech"), lastUsedSpeechPath);
+        file.setFileName(lastUsedSpeechPath);
+    }
+
+    settings.setValue("lastUsedSpeechPath", lastUsedSpeechPath);
+    settings.endGroup();
+    settings.sync();
+
+    QString text;
+    Q_FOREACH(QString title, mSpeechTitles) {
+        text += "== " + title + " ==\n\n" + mSpeechItems[title] + "\n\n";
+    }
+
+    QTextStream out(&file);
+    out << text;
+    file.close();
+    qDebug() << "file saved!";
+}
+
+void Helper::appendSpeech(const QString &title, const QString &text)
+{
+    mSpeechItems[title] = text;
+    mSpeechTitles.append(title);
+
+    emit speechItemsChanged();
 }

@@ -12,6 +12,7 @@
 #include <QLineEdit>
 
 class Helper;
+class QStringListModel;
 
 class MainWindow : public QWidget
 {
@@ -40,6 +41,10 @@ protected Q_SLOTS:
 
     void changeFilter(const QString &filterString);
 
+    void reloadSpeechItems();
+
+    void newSpeechText();
+
 protected:
     bool eventFilter(QObject *obj, QEvent *event);
 
@@ -50,6 +55,7 @@ protected:
     QListView mSpeechListView;
     QWidget *mSpeechSelectorContainer;
     SortFilterProxyModel *mFilterModel;
+    QStringListModel *mStringListModel;
     QTextEdit mSpeechWriter;
     Helper *mHelper;
 };
