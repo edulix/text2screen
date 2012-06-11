@@ -91,6 +91,7 @@ MainWindow::MainWindow(QWidget *parent)
     mLayout.addWidget(mSpeechSelectorContainer);
 
 
+    mSpeechWriter.setObjectName("SpeechWriter");
     mLayout.addWidget(&mSpeechWriter);
 
     connect(mHelper, SIGNAL(speechItemsChanged()), this, SLOT(reloadSpeechItems()));
@@ -287,20 +288,22 @@ void MainWindow::selectDown()
 
 void MainWindow::changeFilter(const QString &filterString)
 {
-    if (mSpeechListView.selectionModel()->selectedIndexes().isEmpty()) {
-        return;
+    QModelIndex currentIndex;
+    if (!mSpeechListView.selectionModel()->selectedIndexes().isEmpty()) {
+        QModelIndex currentIndex = mSpeechListView.selectionModel()->selectedIndexes().first();
+        currentIndex = mFilterModel->mapToSource(currentIndex);
     }
-    QModelIndex currentIndex = mSpeechListView.selectionModel()->selectedIndexes().first();
-    currentIndex = mFilterModel->mapToSource(currentIndex);
 
     mFilterModel->setFilterString(filterString);
 
-    currentIndex = mFilterModel->mapFromSource(currentIndex);
-
-    if (!currentIndex.isValid()) {
-        currentIndex = mFilterModel->index(0, 0);
+    if (currentIndex.isValid()) {
+        currentIndex = mFilterModel->mapFromSource(currentIndex);
     }
-    mSpeechListView.selectionModel()->select(currentIndex, QItemSelectionModel::SelectCurrent);
+
+    if (!currentIndex.isValid() && mFilterModel->rowCount() > 0) {
+        currentIndex = mFilterModel->index(0, 0);
+        mSpeechListView.selectionModel()->select(currentIndex, QItemSelectionModel::SelectCurrent);
+    }
 }
 
 void MainWindow::reloadSpeechItems()
