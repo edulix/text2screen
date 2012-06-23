@@ -96,7 +96,11 @@ void Helper::changeSpeechTitle(const QString &speechTitle)
     mSpeechItems.remove(oldTitle);
 
     int pos = mSpeechTitles.indexOf(oldTitle);
-    mSpeechTitles.replace(pos, speechTitle);
+    if (pos == -1) {
+        mSpeechTitles.append(speechTitle);
+    } else {
+        mSpeechTitles.replace(pos, speechTitle);
+    }
 
     mSpeechTitle = speechTitle;
 
@@ -233,7 +237,7 @@ void Helper::save()
 
     QString text;
     Q_FOREACH(QString title, mSpeechTitles) {
-        text += "== " + title + " ==\n\n" + mSpeechItems[title] + "\n\n";
+        text += "== " + title + " ==\n" + mSpeechItems[title];
     }
 
     QTextStream out(&file);

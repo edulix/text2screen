@@ -226,7 +226,7 @@ void MainWindow::toggleSpeechSelector()
                     QString lineCopy = line;
                     QString title = lineCopy.replace("=", "").trimmed();
                     mHelper->changeSpeechTitle(title);
-                    QString text = html.replace(line, "");
+                    QString text = html.replace(line + "\n", "");
                     mHelper->setSpeechText(text);
                     found = true;
                     break;

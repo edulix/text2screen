@@ -101,12 +101,10 @@ Rectangle {
             id: textItem
             wrapMode: Text.Wrap
             width: mainRectangle.width
-            textFormat: Text.RichText
 
             text: helper.speechText
             anchors.centerIn: parent
             font.pixelSize: 60
-
 
             onFontChanged: calcFontWidth()
             onTextChanged: { calcFontWidth(); goTonitialPosition(); }
